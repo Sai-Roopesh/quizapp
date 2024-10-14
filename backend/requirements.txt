@@ -1,0 +1,9 @@
+langchain
+langchain-openai
+fastapi
+requests
+python-dotenv
+uvicorn
+PyPDF2
+python-multipart
+pdfminer.six
