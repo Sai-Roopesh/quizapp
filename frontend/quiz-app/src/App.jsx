@@ -65,6 +65,8 @@ function App() {
 
   // Generate the quiz
   const handleGenerateQuiz = async () => {
+    const BACKEND_URL = 'https://your-backend-domain.com'
+
     if (!pdfFile && !inputText) {
       alert('Please select a PDF file or enter text.');
       return;
@@ -76,7 +78,7 @@ function App() {
       let response;
       if (inputText) {
         // Send text input to backend
-        response = await axios.post('http://localhost:8000/generate_quiz', {
+        response = await axios.post(`${BACKEND_URL}/generate_quiz`, {
           text: inputText,
           num_questions: numQuestions,
         });
