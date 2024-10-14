@@ -65,7 +65,7 @@ function App() {
 
   // Generate the quiz
   const handleGenerateQuiz = async () => {
-    const BACKEND_URL = 'https://your-backend-domain.com'
+    const BACKEND_URL = 'https://quizapp-backend-5j6t.onrender.com'
 
     if (!pdfFile && !inputText) {
       alert('Please select a PDF file or enter text.');
