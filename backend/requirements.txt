@@ -7,3 +7,4 @@ uvicorn
 PyPDF2
 python-multipart
 pdfminer.six
+gunicorn
