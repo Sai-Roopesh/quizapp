@@ -24,12 +24,12 @@ app = FastAPI()
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    # Update this to your frontend's URL in production
-    allow_origins=["https://quizapp-frontend-chi.vercel.app/"],
+    allow_origins=["https://quizapp-frontend-chi.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
 
 # Define the request body model
 

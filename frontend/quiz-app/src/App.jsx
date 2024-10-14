@@ -92,7 +92,7 @@ function App() {
         formData.append('file', pdfFile);
         formData.append('num_questions', numQuestions);
 
-        response = await axios.post('http://localhost:8000/upload_pdf', formData, {
+        response = await axios.post(`${BACKEND_URL}/upload_pdf`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
