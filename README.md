@@ -2,6 +2,8 @@
 
 An application that generates quizzes based on provided text input or uploaded PDF files using OpenAI's GPT-4 API. The application consists of a frontend built with React and a backend built with FastAPI.
 
+check it out:- https://quizapp-frontend-chi.vercel.app
+
 ## Table of Contents
 
 - [Features](#features)
