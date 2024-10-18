@@ -5,11 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 from pydantic import BaseModel
-from langchain_openai import ChatOpenAI
+from langchain.chat_models import ChatOpenAI
 import json
 import io
 from pdfminer.high_level import extract_text
 import logging
+from langchain.utilities import WikipediaAPIWrapper
+from typing import Optional
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,12 +32,12 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-
 # Define the request body model
 
 
-class Text(BaseModel):
-    text: str
+class QuizRequest(BaseModel):
+    text: Optional[str] = None
+    topic: Optional[str] = None
     num_questions: int = 5  # Default value
 
 
@@ -46,11 +48,8 @@ if not openai_api_key:
 
 # Initialize the language model (LLM)
 llm = ChatOpenAI(
-    model="gpt-4o",
+    model="gpt-4",
     temperature=0,        # Ensure determinism in output
-    max_tokens=None,      # No limit on tokens (optional)
-    timeout=None,         # Use default timeout
-    max_retries=2,        # Retry twice on failures
     api_key=openai_api_key  # Pass the API key to the LLM
 )
 
@@ -61,16 +60,26 @@ async def root():
 
 
 @app.post("/generate_quiz")
-async def generate_quiz(input_text: Text):
-    if not input_text.text:
+async def generate_quiz(input_data: QuizRequest):
+    if input_data.text:
+        text = input_data.text
+    elif input_data.topic:
+        # Fetch content from Wikipedia
+        wikipedia = WikipediaAPIWrapper()
+        text = wikipedia.run(input_data.topic)
+        if not text.strip():
+            raise HTTPException(
+                status_code=404, detail="No content found for the given topic."
+            )
+    else:
         raise HTTPException(
-            status_code=400, detail="Input text is required for quiz generation."
+            status_code=400, detail="Either text or topic is required for quiz generation."
         )
 
     # Updated prompt for quiz generation
     prompt = f"""
-    This is the text: {input_text.text}
-    Generate a quiz with {input_text.num_questions} questions for this text. Return **only** the quiz in **valid JSON format** with the following fields:
+    This is the text: {text}
+    Generate a quiz with {input_data.num_questions} questions for this text. Return **only** the quiz in **valid JSON format** with the following fields:
     - question_number: The question number.
     - question: The quiz question.
     - options: A list of answer choices.
@@ -82,10 +91,10 @@ async def generate_quiz(input_text: Text):
 
     try:
         # Invoke the LLM to generate the quiz
-        ai_response = llm.invoke(prompt)
+        ai_response = llm.predict(prompt)
 
         # Extract the content
-        raw_content = ai_response.content
+        raw_content = ai_response
 
         logger.info("Raw AI response content: %s", raw_content)
 
@@ -143,7 +152,7 @@ async def upload_pdf(file: UploadFile = File(...), num_questions: int = 5):
             raise ValueError("No text found in the uploaded PDF.")
 
         # Generate the quiz using the extracted text
-        response = await generate_quiz(Text(text=text, num_questions=num_questions))
+        response = await generate_quiz(QuizRequest(text=text, num_questions=num_questions))
         return response
 
     except Exception as e:

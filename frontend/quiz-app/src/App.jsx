@@ -20,6 +20,7 @@ import './App.css';
 function App() {
   const [pdfFile, setPdfFile] = useState(null);
   const [inputText, setInputText] = useState('');
+  const [topic, setTopic] = useState('');
   const [numQuestions, setNumQuestions] = useState(5);
   const [quizData, setQuizData] = useState([]);
   const [userAnswers, setUserAnswers] = useState({});
@@ -49,6 +50,7 @@ function App() {
     if (file) {
       setPdfFile(file);
       setInputText('');
+      setTopic('');
       setQuizData([]);
       setUserAnswers({});
       setScore(null);
@@ -65,10 +67,10 @@ function App() {
 
   // Generate the quiz
   const handleGenerateQuiz = async () => {
-    const BACKEND_URL = 'https://quizapp-backend-5j6t.onrender.com'
+    const BACKEND_URL = 'https://quizapp-backend-5j6t.onrender.com';
 
-    if (!pdfFile && !inputText) {
-      alert('Please select a PDF file or enter text.');
+    if (!pdfFile && !inputText && !topic) {
+      alert('Please select a PDF file, enter text, or enter a topic.');
       return;
     }
 
@@ -84,6 +86,16 @@ function App() {
         });
         // Show acknowledgment for text input
         setSnackbarMessage('Quiz generated successfully from text input!');
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true);
+      } else if (topic) {
+        // Send topic to backend
+        response = await axios.post(`${BACKEND_URL}/generate_quiz`, {
+          topic: topic,
+          num_questions: numQuestions,
+        });
+        // Show acknowledgment for topic input
+        setSnackbarMessage('Quiz generated successfully from topic!');
         setSnackbarSeverity('success');
         setOpenSnackbar(true);
       } else {
@@ -121,7 +133,9 @@ function App() {
       setErrorMessage(
         error.response?.data?.detail || 'An error occurred while generating the quiz.'
       );
-      setSnackbarMessage(error.response?.data?.detail || 'An error occurred while generating the quiz.');
+      setSnackbarMessage(
+        error.response?.data?.detail || 'An error occurred while generating the quiz.'
+      );
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
       setLoading(false);
@@ -160,6 +174,7 @@ function App() {
     setIsSubmitted(false);
     setPdfFile(null);
     setInputText('');
+    setTopic('');
     setErrorMessage('');
     setCurrentPage(0);
     // Show acknowledgment for quiz reset
@@ -206,8 +221,28 @@ function App() {
             variant="outlined"
             fullWidth
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
+            onChange={(e) => {
+              setInputText(e.target.value);
+              setTopic('');
+              setPdfFile(null);
+            }}
             placeholder="Enter text here..."
+          />
+
+          <Typography variant="body1" gutterBottom align="center" style={{ margin: '20px 0' }}>
+            Or enter a topic below:
+          </Typography>
+
+          <TextField
+            variant="outlined"
+            fullWidth
+            value={topic}
+            onChange={(e) => {
+              setTopic(e.target.value);
+              setInputText('');
+              setPdfFile(null);
+            }}
+            placeholder="Enter a topic here..."
           />
 
           <TextField
