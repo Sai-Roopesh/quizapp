@@ -69,6 +69,7 @@ function App() {
   const handleGenerateQuiz = async () => {
     const BACKEND_URL = 'https://quizapp-backend-5j6t.onrender.com';
 
+
     if (!pdfFile && !inputText && !topic) {
       alert('Please select a PDF file, enter text, or enter a topic.');
       return;

@@ -1,16 +1,16 @@
-# server.py
+# backend/server.py
 
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 from pydantic import BaseModel
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI  # Updated import
 import json
 import io
 from pdfminer.high_level import extract_text
 import logging
-from langchain.utilities import WikipediaAPIWrapper
+from langchain_community.utilities import WikipediaAPIWrapper  # Updated import
 from typing import Optional
 
 # Configure logging
@@ -23,10 +23,16 @@ load_dotenv()
 # Initialize the FastAPI app
 app = FastAPI()
 
+# Define allowed origins directly (hard-coded)
+ALLOWED_ORIGINS = [
+    "https://quizapp-frontend-chi.vercel.app",
+    "http://localhost:5173"  # Include this if you test locally
+]
+
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://quizapp-frontend-chi.vercel.app/"],
+    allow_origins=ALLOWED_ORIGINS,  # Hard-coded allowed origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -52,6 +58,17 @@ llm = ChatOpenAI(
     temperature=0,        # Ensure determinism in output
     api_key=openai_api_key  # Pass the API key to the LLM
 )
+
+# Middleware to log incoming requests
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    origin = request.headers.get('origin')
+    logger.info(f"Incoming request from origin: {origin}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
 
 
 @app.get("/")
@@ -91,7 +108,7 @@ async def generate_quiz(input_data: QuizRequest):
 
     try:
         # Invoke the LLM to generate the quiz
-        ai_response = llm.predict(prompt)
+        ai_response = llm.invoke(prompt)  # Updated method
 
         # Extract the content
         raw_content = ai_response
