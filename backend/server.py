@@ -24,15 +24,12 @@ load_dotenv()
 app = FastAPI()
 
 # Define allowed origins directly (hard-coded)
-ALLOWED_ORIGINS = [
-    "https://quizapp-frontend-chi.vercel.app",
-    "http://localhost:5173"  # Include this if you test locally
-]
+
 
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,  # Hard-coded allowed origins
+    allow_origins=["*"],  # Hard-coded allowed origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
