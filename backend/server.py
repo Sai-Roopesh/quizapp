@@ -102,13 +102,12 @@ async def generate_quiz(input_data: QuizRequest):
 
     Do not include any explanations, code snippets, or additional text. Do not wrap the JSON in code blocks or use triple backticks.
     """
-
     try:
         # Invoke the LLM to generate the quiz
-        ai_response = llm.invoke(prompt)  # Updated method
+        ai_response = llm.invoke(prompt)
 
         # Extract the content
-        raw_content = ai_response
+        raw_content = ai_response.content
 
         logger.info("Raw AI response content: %s", raw_content)
 
