@@ -92,7 +92,7 @@ async def generate_quiz(input_data: QuizRequest):
     # Updated prompt for quiz generation
     prompt = f"""This is the text: {text}
 Generate a quiz with {input_data.num_questions} questions for this text.
-Return **only** the quiz in **valid JSON format** with the following fields:
+Return **only** the quiz in **valid JSON format** as a list of questions with the following fields:
 - question_number: The question number.
 - question: The quiz question.
 - options: A list of answer choices.
@@ -100,7 +100,8 @@ Return **only** the quiz in **valid JSON format** with the following fields:
 - explanation: A brief explanation for why the answer is correct.
 
 Do not include any explanations, code snippets, or additional text.
-Do not wrap the JSON in code blocks or use triple backticks."""
+Do not wrap the JSON in code blocks or use triple backticks.
+Do not include a top-level key; just return the list of questions."""
 
     try:
         # Invoke the LLM to generate the quiz
@@ -131,11 +132,13 @@ Do not wrap the JSON in code blocks or use triple backticks."""
 
     except json.JSONDecodeError as e:
         logger.exception("JSON Decode Error")
+        logger.error("Failed to parse JSON. AI Response: %s", raw_content)
         raise HTTPException(
             status_code=500, detail=f"Failed to parse the quiz JSON: {str(e)}"
         )
     except Exception as e:
         logger.exception("Error during quiz generation")
+        logger.error("AI Response: %s", raw_content)
         raise HTTPException(
             status_code=500, detail=f"An error occurred during quiz generation: {str(e)}"
         )
