@@ -5,12 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 from pydantic import BaseModel
-from langchain_openai import ChatOpenAI  # Updated import
+from langchain_community.chat_models import ChatOpenAI
 import json
 import io
 from pdfminer.high_level import extract_text
 import logging
-from langchain_community.utilities import WikipediaAPIWrapper  # Updated import
+from langchain_community.utilities import WikipediaAPIWrapper
 from typing import Optional
 
 # Configure logging
@@ -24,15 +24,14 @@ load_dotenv()
 app = FastAPI()
 
 # Define allowed origins directly (hard-coded)
+origins = ["https://quizapp-frontend-chi.vercel.app"]
 
-
-# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://quizapp-frontend-chi.vercel.app"],
+    allow_origins=origins,  # This should be a list of origins
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
 # Define the request body model
@@ -51,9 +50,9 @@ if not openai_api_key:
 
 # Initialize the language model (LLM)
 llm = ChatOpenAI(
-    model="gpt-4",
+    model_name="gpt-3.5-turbo",
     temperature=0,        # Ensure determinism in output
-    api_key=openai_api_key  # Pass the API key to the LLM
+    openai_api_key=openai_api_key  # Pass the API key to the LLM
 )
 
 # Middleware to log incoming requests
@@ -91,42 +90,35 @@ async def generate_quiz(input_data: QuizRequest):
         )
 
     # Updated prompt for quiz generation
-    prompt = f"""
-    This is the text: {text}
-    Generate a quiz with {input_data.num_questions} questions for this text. Return **only** the quiz in **valid JSON format** with the following fields:
-    - question_number: The question number.
-    - question: The quiz question.
-    - options: A list of answer choices.
-    - answer: The correct answer.
-    - explanation: A brief explanation for why the answer is correct.
+    prompt = f"""This is the text: {text}
+Generate a quiz with {input_data.num_questions} questions for this text.
+Return **only** the quiz in **valid JSON format** with the following fields:
+- question_number: The question number.
+- question: The quiz question.
+- options: A list of answer choices.
+- answer: The correct answer.
+- explanation: A brief explanation for why the answer is correct.
 
-    Do not include any explanations, code snippets, or additional text. Do not wrap the JSON in code blocks or use triple backticks.
-    """
+Do not include any explanations, code snippets, or additional text.
+Do not wrap the JSON in code blocks or use triple backticks."""
+
     try:
         # Invoke the LLM to generate the quiz
-        ai_response = llm.invoke(prompt)
+        ai_response = llm.predict(prompt)
 
         # Extract the content
-        raw_content = ai_response.content
+        raw_content = ai_response.strip()
 
         logger.info("Raw AI response content: %s", raw_content)
 
         # Remove code block formatting if present
-        if raw_content.startswith('```'):
-            # Remove the opening triple backticks and language identifier
-            raw_content = raw_content.strip('`').strip()
+        if raw_content.startswith('```') and raw_content.endswith('```'):
+            raw_content = raw_content[3:-3].strip()
             if raw_content.startswith('json'):
-                raw_content = raw_content[4:].strip()  # Remove 'json'
-            # Remove the closing triple backticks
-            if raw_content.endswith('```'):
-                raw_content = raw_content[:-3].strip()
+                raw_content = raw_content[4:].strip()
 
         # Now, parse the JSON
         quiz_data = json.loads(raw_content)
-
-        # Check if the response is wrapped in a 'quiz' key
-        if isinstance(quiz_data, dict) and "quiz" in quiz_data:
-            quiz_data = quiz_data["quiz"]
 
         # Ensure that quiz_data is a list
         if not isinstance(quiz_data, list):
@@ -138,12 +130,12 @@ async def generate_quiz(input_data: QuizRequest):
         return quiz_data
 
     except json.JSONDecodeError as e:
-        logger.error("JSON Decode Error: %s", str(e))
+        logger.exception("JSON Decode Error")
         raise HTTPException(
             status_code=500, detail=f"Failed to parse the quiz JSON: {str(e)}"
         )
     except Exception as e:
-        logger.error("Error during quiz generation: %s", str(e))
+        logger.exception("Error during quiz generation")
         raise HTTPException(
             status_code=500, detail=f"An error occurred during quiz generation: {str(e)}"
         )
@@ -169,7 +161,7 @@ async def upload_pdf(file: UploadFile = File(...), num_questions: int = 5):
         return response
 
     except Exception as e:
-        logger.error("Error processing PDF: %s", str(e))
+        logger.exception("Error processing PDF")
         raise HTTPException(
             status_code=500, detail=f"An error occurred while processing the PDF: {str(e)}"
         )

@@ -67,7 +67,7 @@ function App() {
 
   // Generate the quiz
   const handleGenerateQuiz = async () => {
-    const BACKEND_URL = 'https://quizapp-backend-5j6t.onrender.com'; // Update with your backend URL
+    const BACKEND_URL = 'https://quizapp-cm7g.onrender.com'; // Update with your backend URL
 
 
     if (!pdfFile && !inputText && !topic) {
